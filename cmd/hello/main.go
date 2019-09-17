@@ -28,19 +28,19 @@ func main() {
 	router.HandleFunc("/api/hello", handlers.Hello(log)).Methods(http.MethodGet)
 
 	server := &http.Server{
-		Addr: ":"+port,
+		Addr:    ":" + port,
 		Handler: router,
 	}
 
+	interrupt := make(chan os.Signal, 1)
+	signal.Notify(interrupt, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+
 	go func() {
 		err := server.ListenAndServe()
-		if err != nil {
+		if err != nil && err != http.ErrServerClosed {
 			log.Fatal(err)
 		}
 	}()
-
-	interrupt := make(chan os.Signal, 1)
-	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
 
 	select {
 	case killSignal := <-interrupt:
@@ -59,4 +59,5 @@ func main() {
 	if err != nil {
 		log.Error(err)
 	}
+	log.Info("Server shutted down properly")
 }
