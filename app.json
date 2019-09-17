@@ -1,0 +1,11 @@
+{
+  "name": "Start on Heroku: Go",
+  "description": "Hello Go App",
+  "keywords": [
+    "hello",
+    "go",
+    "webserver"
+  ],
+  "website": "https://github.com/alexpil/hello",
+  "repository": "https://github.com/alexpil/hello"
+}
