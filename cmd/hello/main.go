@@ -11,6 +11,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 
+	"github.com/alexpil/hello/internal/diagnostics"
 	"github.com/alexpil/hello/internal/handlers"
 )
 
@@ -22,7 +23,13 @@ func main() {
 		log.Fatal("Port is not set")
 	}
 
+	diagPort := os.Getenv("DIAG_PORT")
+	if port == "" {
+		log.Fatal("Diagnostics port is not set")
+	}
+
 	log.Info("Application is starting...")
+	log.Infof("Version: %s, hash: %s, build time: %s", diagnostics.Version, diagnostics.Hash, diagnostics.BuildTime)
 
 	router := mux.NewRouter()
 	router.HandleFunc("/api/hello", handlers.Hello(log)).Methods(http.MethodGet)
@@ -41,6 +48,18 @@ func main() {
 			log.Fatal(err)
 		}
 	}()
+	log.Infof("The server is running on port %s", port)
+
+	// Diagnostics server
+	diagServer := diagnostics.NewServer(log, diagPort)
+
+	go func() {
+		err := diagServer.ListenAndServe()
+		if err != nil && err != http.ErrServerClosed {
+			log.Fatal(err)
+		}
+	}()
+	log.Infof("Diagnostics server is running on port %s", diagPort)
 
 	select {
 	case killSignal := <-interrupt:
