@@ -11,6 +11,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 
+	"github.com/alexpil/hello/internal/db"
 	"github.com/alexpil/hello/internal/diagnostics"
 	"github.com/alexpil/hello/internal/handlers"
 )
@@ -27,6 +28,25 @@ func main() {
 	if port == "" {
 		log.Fatal("Diagnostics port is not set")
 	}
+
+	dbURL := os.Getenv("DATABASE_URL")
+	if dbURL == "" {
+		log.Fatal("The database is not set")
+	}
+
+	conn, err := db.Connect(dbURL)
+	if err != nil {
+		log.Fatalf("Couldn't connect to the DB: %v", err)
+	}
+
+	var psqlVersion string
+	err = conn.QueryRow(context.Background(), "SELECT version()").Scan(&psqlVersion)
+	if err != nil {
+		log.Fatalf("Couldn't get Postgres version: %v", err)
+	}
+	log.Infof("Postgres version is: %v", psqlVersion)
+
+	defer conn.Close(context.Background())
 
 	log.Info("Application is starting...")
 	log.Infof("Version: %s, hash: %s, build time: %s", diagnostics.Version, diagnostics.Hash, diagnostics.BuildTime)
@@ -74,7 +94,7 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	err := server.Shutdown(ctx)
+	err = server.Shutdown(ctx)
 	if err != nil {
 		log.Error(err)
 	}

@@ -16,7 +16,7 @@ RUN mkdir -p /hello
 ADD . /hello
 WORKDIR /hello
 
-RUN CGO_ENABLED=0 go build -o bin/hello ./cmd/hello
+RUN GOOS=linux GOARCH=amd64 make build
 
 # Run the binary
 FROM scratch
@@ -29,9 +29,11 @@ COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 COPY --from=builder /hello/bin/hello /hello
 
-
 ENV PORT 8080
+ENV DIAG_PORT 8089
+ENV DATABASE_URL postgres://user:pass@db/postgres?sslmode=disable
 
 EXPOSE $PORT
+EXPOSE $DIAG_PORT
 
 CMD ["/hello"]
